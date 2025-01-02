@@ -13,7 +13,7 @@ class_labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D',
 @app.route('/questions', methods=['GET'])
 def get_questions():
     questions = [
-        {"question": label, "image": f"{label}.jpg"} for label in class_labels
+        {"question": label, "hint": f"/static/sign_language_dataset/{label}.jpg"} for label in class_labels
     ]
     return jsonify({"questions": questions})
 
@@ -36,10 +36,11 @@ def post_answers():
     # Find the predicted label
     predicted_index = np.argmax(predictions)
     predicted_label = class_labels[predicted_index]
-    confidence = float(predictions[0][predicted_index])  # Convert to percentage and ensure it's a float
+    confidence = float(predictions[0][predicted_index] * 100)  # Convert to percentage and ensure it's a float
     
     # Debug: Print confidence to verify calculation
     print("Predicted Label:", predicted_label)
+    print("Answer:", question)
     print("Confidence:", f"{confidence:.2f}%")
     
     # Determine if the prediction matches the question
