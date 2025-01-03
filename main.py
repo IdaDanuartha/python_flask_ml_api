@@ -8,12 +8,12 @@ app = Flask(__name__)
 model = load_model('SignLanguage.h5')
 
 # Define class labels for predictions
-class_labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+class_labels = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
 
 @app.route('/questions', methods=['GET'])
 def get_questions():
     questions = [
-        {"question": label, "hint": f"/static/sign_language_dataset/{label}.jpg"} for label in class_labels
+        {"question": label, "hint": f"/static/sign_language_dataset/{label}.jpeg"} for label in class_labels
     ]
     return jsonify({"questions": questions})
 
@@ -41,10 +41,16 @@ def post_answers():
     # Debug: Print confidence to verify calculation
     print("Predicted Label:", predicted_label)
     print("Answer:", question)
-    print("Confidence:", f"{confidence:.2f}%")
+    print("Percetage:", f"{confidence:.2f}%")
     
     # Determine if the prediction matches the question
     status = predicted_label == question
+
+    # Validate confidence percentage
+    # if confidence < 80:
+    #     predicted_label = "Your answer is unpredictable"
+    #     status = False
+
     response = {
         "status": status,
         "percentage": f"{confidence:.2f}%",
@@ -55,4 +61,4 @@ def post_answers():
     return jsonify(response)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
