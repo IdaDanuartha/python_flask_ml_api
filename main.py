@@ -60,12 +60,14 @@ def post_answers():
         print("Percentage:", f"{confidence:.2f}%")
         
         # Determine if the prediction matches the question
-        status = predicted_label == question
-        
+        # status = predicted_label == question
+
         # Validate confidence percentage
         if confidence < 70:
             predicted_label = "Your answer is unpredictable"
             status = False
+        else:
+            status = True
 
 
         response = {
