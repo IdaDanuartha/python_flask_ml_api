@@ -1,14 +1,22 @@
 from flask import Flask, request, jsonify
 from controllers.ml import load_model, predict
 import numpy as np
+import os
 
 app = Flask(__name__)
 
 # Load the ML model at startup
 model = load_model('SignLanguage.h5')
 
+# Folder for save temporary files
+UPLOAD_FOLDER = './uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 # Define class labels for predictions
-class_labels = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+class_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
 
 @app.route('/questions', methods=['GET'])
 def get_questions():
@@ -25,40 +33,52 @@ def post_answers():
     
     question = request.form['question']
     image_file = request.files['image']
-    image_buffer = image_file.read()
-    
-    # Make predictions
-    predictions = predict(model, image_buffer)
-    
-    # Debug: Print predictions to verify output
-    print("Predictions:", predictions)
-    
-    # Find the predicted label
-    predicted_index = np.argmax(predictions)
-    predicted_label = class_labels[predicted_index]
-    confidence = float(predictions[0][predicted_index] * 100)  # Convert to percentage and ensure it's a float
-    
-    # Debug: Print confidence to verify calculation
-    print("Predicted Label:", predicted_label)
-    print("Answer:", question)
-    print("Percetage:", f"{confidence:.2f}%")
-    
-    # Determine if the prediction matches the question
-    status = predicted_label == question
 
-    # Validate confidence percentage
-    # if confidence < 80:
-    #     predicted_label = "Your answer is unpredictable"
-    #     status = False
+    if image_file:
+        # Save file to upload folder
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], image_file.filename)
+        image_file.save(file_path)
 
-    response = {
-        "status": status,
-        "percentage": f"{confidence:.2f}%",
-        "predicted_label": predicted_label,
-        "answer": question
-    }
-    
-    return jsonify(response)
+        # Make predictions
+        predictions = predict(model, file_path)
+        
+        # Debug: Print predictions to verify output
+        print("Predictions:", predictions)
+        
+        # Check if predictions are empty
+        if predictions.size == 0:
+            return jsonify({"error": "Model did not return any predictions"}), 500
+        
+        # Find the predicted label
+        predicted_index = np.argmax(predictions)
+        predicted_label = class_labels[predicted_index]
+        confidence = float(predictions[0][predicted_index] * 100)  # Convert to percentage and ensure it's a float
+        
+        # Debug: Print confidence to verify calculation
+        print("Predicted Label:", predicted_label)
+        print("Answer:", question)
+        print("Percentage:", f"{confidence:.2f}%")
+        
+        # Determine if the prediction matches the question
+        status = predicted_label == question
+        
+        # Validate confidence percentage
+        if confidence < 70:
+            predicted_label = "Your answer is unpredictable"
+            status = False
+
+
+        response = {
+            "status": status,
+            "percentage": f"{confidence:.2f}%",
+            "predicted_label": predicted_label,
+            "answer": question
+        }
+        
+        # Remove file after prediction
+        os.remove(file_path)
+        
+        return jsonify(response)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
