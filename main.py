@@ -63,7 +63,7 @@ def post_answers():
         # status = predicted_label == question
 
         # Validate confidence percentage
-        if confidence < 70:
+        if confidence < 80:
             predicted_label = "Your answer is unpredictable"
             status = False
         else:
